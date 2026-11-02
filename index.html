@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evedenz — Signatures and validation evidence for SAP Cloud ALM</title>
+<meta name="description" content="Evedenz adds electronic signatures, validation records and signed feature reports to SAP Cloud ALM — built for regulated (GxP) software delivery.">
+<meta property="og:title" content="Evedenz — Signatures and validation evidence for SAP Cloud ALM">
+<meta property="og:description" content="Sign feature reports with SES, AES or QES, gate workflow steps on signatures, and keep an audit trail that knows when a signature still holds.">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --surface: #ffffff;
+    --surface-2: #efece4;
+    --ink: #14213d;
+    --ink-2: #44506a;
+    --ink-3: #6b7489;
+    --line: #dcd7cc;
+    --accent: #1f5f4a;
+    --accent-ink: #ffffff;
+    --accent-soft: #e2efe9;
+    --ok: #1f7a4d;
+    --ok-soft: #e1f2e8;
+    --warn: #a35f00;
+    --warn-soft: #fbefd9;
+    --bad: #b3261e;
+    --bad-soft: #fbe3e1;
+    --shadow: 0 1px 2px rgba(20, 33, 61, .06), 0 12px 32px -12px rgba(20, 33, 61, .18);
+    --radius: 14px;
+    --serif: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1424;
+      --surface: #151d31;
+      --surface-2: #1b2540;
+      --ink: #eef1f7;
+      --ink-2: #b6bfd3;
+      --ink-3: #8790a6;
+      --line: #2a3553;
+      --accent: #5cc29a;
+      --accent-ink: #0b1a14;
+      --accent-soft: #173a2f;
+      --ok: #5cc29a;
+      --ok-soft: #173a2f;
+      --warn: #f0b45a;
+      --warn-soft: #3a2c14;
+      --bad: #f2877f;
+      --bad-soft: #43201f;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 16px 40px -16px rgba(0, 0, 0, .6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1424;
+    --surface: #151d31;
+    --surface-2: #1b2540;
+    --ink: #eef1f7;
+    --ink-2: #b6bfd3;
+    --ink-3: #8790a6;
+    --line: #2a3553;
+    --accent: #5cc29a;
+    --accent-ink: #0b1a14;
+    --accent-soft: #173a2f;
+    --ok: #5cc29a;
+    --ok-soft: #173a2f;
+    --warn: #f0b45a;
+    --warn-soft: #3a2c14;
+    --bad: #f2877f;
+    --bad-soft: #43201f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 16px 40px -16px rgba(0, 0, 0, .6);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 17px/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  img, svg { display: block; max-width: 100%; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  @media (max-width: 600px) { .wrap { padding: 0 16px; } }
+
+  /* Header */
+  header.top {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 600 20px/1 var(--serif); letter-spacing: -.01em; }
+  .brand svg { width: 28px; height: 28px; }
+  nav.links { display: flex; gap: 28px; font-size: 15px; color: var(--ink-2); }
+  nav.links a { text-decoration: none; }
+  nav.links a:hover { color: var(--ink); }
+  @media (max-width: 820px) { nav.links { display: none; } }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 20px; border-radius: 999px;
+    font: 600 15px/1 var(--sans); text-decoration: none;
+    border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+    transition: transform .15s ease, background .15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-ghost { border-color: var(--line); color: var(--ink); background: var(--surface); }
+  .btn-sm { padding: 9px 16px; font-size: 14px; }
+
+  /* Hero */
+  .hero { padding: 88px 0 72px; }
+  .hero .wrap { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; }
+  @media (max-width: 960px) { .hero { padding: 56px 0 48px; } .hero .wrap { grid-template-columns: 1fr; gap: 40px; } }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font: 500 13px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 8px 12px; border-radius: 999px; margin-bottom: 24px;
+  }
+  h1, h2, h3 { font-family: var(--serif); font-weight: 600; letter-spacing: -.02em; margin: 0; }
+  h1 { font-size: clamp(38px, 5.4vw, 62px); line-height: 1.04; }
+  h1 em { font-style: italic; color: var(--accent); }
+  .lede { font-size: 19px; color: var(--ink-2); margin: 24px 0 32px; max-width: 34em; }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .fine { margin-top: 20px; font-size: 14px; color: var(--ink-3); }
+
+  /* Product mock */
+  .mock {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden; font-size: 14px;
+  }
+  .mock-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+  .mock-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+  .mock-bar span { margin-left: 8px; font: 500 12px/1 var(--mono); color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mock-head { padding: 18px 20px 6px; }
+  .mock-head small { font: 500 12px/1 var(--mono); color: var(--ink-3); }
+  .mock-head h4 { margin: 6px 0 0; font: 600 17px/1.3 var(--sans); }
+  .steps { display: flex; gap: 4px; padding: 14px 20px 6px; flex-wrap: wrap; }
+  .steps b { font: 500 11px/1 var(--sans); padding: 6px 8px; border-radius: 6px; background: var(--surface-2); color: var(--ink-3); }
+  .steps b.done { background: var(--accent-soft); color: var(--accent); }
+  .steps b.now { background: var(--accent); color: var(--accent-ink); }
+  table.sig { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  table.sig th { text-align: left; font: 500 11px/1 var(--sans); text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); padding: 10px 20px; border-bottom: 1px solid var(--line); }
+  table.sig td { padding: 12px 20px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.sig tr:last-child td { border-bottom: 0; }
+  table.sig td small { display: block; color: var(--ink-3); font-size: 12px; }
+  .pill { display: inline-block; font: 600 12px/1 var(--sans); padding: 5px 9px; border-radius: 999px; white-space: nowrap; }
+  .pill.ok { color: var(--ok); background: var(--ok-soft); }
+  .pill.warn { color: var(--warn); background: var(--warn-soft); }
+  .pill.bad { color: var(--bad); background: var(--bad-soft); }
+  .q { font: 500 12px/1 var(--mono); color: var(--ink-2); }
+  @media (max-width: 520px) { table.sig .hide-sm { display: none; } table.sig th, table.sig td { padding-left: 14px; padding-right: 14px; } }
+
+  /* Logos / strip */
+  .strip { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 22px 0; }
+  .strip .wrap { display: flex; flex-wrap: wrap; gap: 12px 36px; align-items: center; justify-content: center; color: var(--ink-3); font-size: 14px; }
+  .strip strong { color: var(--ink-2); font-weight: 600; }
+
+  /* Sections */
+  section { padding: 96px 0; }
+  @media (max-width: 600px) { section { padding: 64px 0; } }
+  .section-head { max-width: 720px; margin-bottom: 48px; }
+  .kicker { font: 500 13px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  h2 { font-size: clamp(30px, 3.6vw, 44px); line-height: 1.1; }
+  .section-head p { color: var(--ink-2); font-size: 18px; margin: 18px 0 0; }
+
+  .grid { display: grid; gap: 20px; grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 960px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 28px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .card .ico { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+  .card .ico svg { width: 22px; height: 22px; }
+  .card h3 { font: 600 19px/1.3 var(--sans); letter-spacing: -.01em; }
+  .card p { margin: 0; color: var(--ink-2); font-size: 15.5px; }
+
+  /* Problem */
+  .problem { background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .problem .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
+  @media (max-width: 860px) { .problem .cols { grid-template-columns: 1fr; gap: 32px; } }
+  .pain { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  .pain li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink-2); font-size: 15.5px; }
+  .pain li b { color: var(--ink); font-weight: 600; display: block; margin-bottom: 2px; }
+  .pain svg { width: 22px; height: 22px; color: var(--bad); margin-top: 2px; }
+
+  /* Validity rules */
+  .rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 900px) { .rules { grid-template-columns: 1fr; } }
+  .rule { border-radius: var(--radius); padding: 28px; border: 1px solid var(--line); background: var(--surface); }
+  .rule .pill { margin-bottom: 16px; }
+  .rule h3 { font: 600 19px/1.3 var(--sans); margin-bottom: 8px; }
+  .rule p { margin: 0; color: var(--ink-2); font-size: 15.5px; }
+
+  .timeline { margin-top: 40px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; overflow-x: auto; }
+  .timeline h3 { font: 600 16px/1.3 var(--sans); margin-bottom: 4px; }
+  .timeline > p { margin: 0 0 22px; color: var(--ink-3); font-size: 14.5px; }
+  .flow { display: grid; grid-template-columns: repeat(7, minmax(108px, 1fr)); gap: 0; min-width: 760px; position: relative; }
+  .flow .st { text-align: center; position: relative; padding-top: 30px; font-size: 13px; color: var(--ink-2); }
+  .flow .st::before { content: ""; position: absolute; top: 9px; left: 0; right: 0; height: 2px; background: var(--line); }
+  .flow .st:first-child::before { left: 50%; }
+  .flow .st:last-child::before { right: 50%; }
+  .flow .st::after { content: ""; position: absolute; top: 3px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--surface); border: 2px solid var(--ink-3); }
+  .flow .st.v::after { border-color: var(--accent); background: var(--accent); }
+  .flow .st em { display: block; font-style: normal; margin-top: 8px; }
+  .flow .st em .pill { font-size: 11px; }
+
+  /* Report */
+  .report .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+  @media (max-width: 900px) { .report .cols { grid-template-columns: 1fr; gap: 40px; } }
+  .checks { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 14px; }
+  .checks li { display: grid; grid-template-columns: 24px 1fr; gap: 12px; color: var(--ink-2); }
+  .checks li b { color: var(--ink); font-weight: 600; }
+  .checks svg { width: 20px; height: 20px; color: var(--accent); margin-top: 3px; }
+  .paper {
+    background: #fffdf8; color: #1d2433; border-radius: 6px; padding: 36px 34px 28px;
+    box-shadow: var(--shadow); border: 1px solid #e6e0d2; font-size: 13px; line-height: 1.5;
+    transform: rotate(-1.2deg); max-width: 460px; margin: 0 auto; position: relative;
+  }
+  .paper .doc-k { font: 500 10px/1 var(--mono); color: #7a8193; letter-spacing: .06em; text-transform: uppercase; }
+  .paper h4 { font: 600 20px/1.2 var(--serif); margin: 8px 0 16px; }
+  .paper dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; margin: 0 0 18px; padding: 14px; background: #f4f1e8; border-radius: 4px; }
+  .paper dt { color: #6b7385; }
+  .paper dd { margin: 0; font-weight: 500; }
+  .paper .lines i { display: block; height: 7px; border-radius: 4px; background: #e8e3d6; margin: 7px 0; }
+  .paper .decl { margin-top: 18px; padding-top: 14px; border-top: 1px dashed #cfc8b8; font-style: italic; color: #3a4256; }
+  .paper .sigline { display: flex; justify-content: space-between; align-items: end; margin-top: 18px; gap: 12px; }
+  .paper .sigline .who { font: 500 12px/1.4 var(--sans); color: #6b7385; }
+  .paper .sigline .who b { display: block; color: #1d2433; font-size: 13px; }
+  .seal {
+    width: 84px; height: 84px; border-radius: 50%; border: 2px solid #1f5f4a; color: #1f5f4a;
+    display: grid; place-items: center; text-align: center; font: 600 10px/1.2 var(--mono);
+    letter-spacing: .06em; transform: rotate(-10deg); flex: none;
+  }
+  .paper .foot { margin-top: 18px; font: 500 10px/1 var(--mono); color: #9aa0ad; display: flex; justify-content: space-between; }
+
+  /* Architecture */
+  .arch { background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .diagram { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; margin-bottom: 40px; overflow-x: auto; }
+  .diagram svg { min-width: 720px; width: 100%; height: auto; }
+  .diagram .n { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+  .diagram .n.hl { fill: var(--accent-soft); stroke: var(--accent); }
+  .diagram .t { fill: var(--ink); font: 600 14px var(--sans); }
+  .diagram .s { fill: var(--ink-3); font: 400 12px var(--sans); }
+  .diagram .e { stroke: var(--ink-3); stroke-width: 1.5; fill: none; }
+  .diagram .ah { fill: var(--ink-3); }
+  .diagram .grp { fill: none; stroke: var(--accent); stroke-dasharray: 5 5; stroke-width: 1.2; }
+  .diagram .gl { fill: var(--accent); font: 500 11px var(--mono); letter-spacing: .06em; }
+
+  /* FAQ */
+  .faq { max-width: 820px; }
+  details { border-bottom: 1px solid var(--line); padding: 20px 0; }
+  details summary { cursor: pointer; list-style: none; font: 600 18px/1.4 var(--sans); display: flex; justify-content: space-between; gap: 16px; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after { content: "+"; font: 400 24px/1 var(--sans); color: var(--ink-3); transition: transform .2s; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { color: var(--ink-2); margin: 12px 0 0; }
+
+  /* CTA */
+  .cta { padding: 0 0 96px; }
+  .cta-box {
+    background: var(--ink); color: var(--bg); border-radius: 22px; padding: 64px 48px;
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 32px; align-items: center;
+  }
+  .cta-box h2 { color: var(--bg); }
+  .cta-box p { color: color-mix(in srgb, var(--bg) 75%, transparent); margin: 16px 0 0; font-size: 18px; }
+  .cta-box .cta-row { justify-content: flex-end; }
+  .cta-box .btn-primary { background: var(--bg); color: var(--ink); }
+  @media (max-width: 860px) { .cta-box { grid-template-columns: 1fr; padding: 40px 24px; } .cta-box .cta-row { justify-content: flex-start; } }
+
+  footer { border-top: 1px solid var(--line); padding: 32px 0; color: var(--ink-3); font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer p { margin: 0; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#" aria-label="Evedenz home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="currentColor" style="color:var(--accent)"/><path d="M10 9h12M10 16h9M10 23h12M10 9v14" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg>
+      Evedenz
+    </a>
+    <nav class="links" aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#validity">Signature validity</a>
+      <a href="#report">Signed reports</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="#contact">Book a demo</a>
+  </div>
+</header>
+
+<main>
+  <!-- Hero -->
+  <div class="hero">
+    <div class="wrap">
+      <div>
+        <div class="eyebrow">For SAP Cloud ALM</div>
+        <h1>Evidence that <em>holds up</em>, right where your features live.</h1>
+        <p class="lede">Evedenz adds electronic signatures, validation records and signed feature reports to SAP Cloud ALM. Gate each workflow step on a signature, and keep an audit trail that knows whether every signature still stands.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#contact">Book a demo</a>
+          <a class="btn btn-ghost" href="#validity">See how validity works</a>
+        </div>
+        <p class="fine">Runs in your own SAP BTP subaccount. Nothing changes on your Cloud ALM tenant.</p>
+      </div>
+
+      <div class="mock" role="img" aria-label="Example: the signatures table on a Cloud ALM feature, showing a signed, a changed-since and an invalid signature">
+        <div class="mock-bar"><i></i><i></i><i></i><span>Cloud ALM · Features · FEAT-1042</span></div>
+        <div class="mock-head">
+          <small>FEAT-1042 · Release 2026.4</small>
+          <h4>Batch release: second-person verification</h4>
+        </div>
+        <div class="steps" aria-hidden="true">
+          <b class="done">Specification</b><b class="done">Validation</b><b class="done">Implementation</b><b class="now">Testing</b><b>Tested</b><b>Ready</b><b>Deployed</b>
+        </div>
+        <table class="sig">
+          <thead><tr><th>Step</th><th class="hide-sm">Quality</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Approve specification<small>M. Keller · 14 Oct</small></td><td class="hide-sm"><span class="q">QES</span></td><td><span class="pill ok">Signed</span></td></tr>
+            <tr><td>Handover to test<small>J. Nowak · 22 Oct</small></td><td class="hide-sm"><span class="q">AES</span></td><td><span class="pill warn">Changed since</span></td></tr>
+            <tr><td>Handover to test<small>J. Nowak · 9 Oct</small></td><td class="hide-sm"><span class="q">AES</span></td><td><span class="pill bad">Invalid</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="strip">
+    <div class="wrap">
+      <span><strong>SAP Cloud ALM</strong> launchpad extension</span>
+      <span><strong>Skribble</strong> SES · AES · QES</span>
+      <span><strong>SAP BTP</strong> Cloud Foundry</span>
+      <span><strong>XSUAA</strong> role-based access</span>
+    </div>
+  </div>
+
+  <!-- Problem -->
+  <section class="problem">
+    <div class="wrap cols">
+      <div>
+        <div class="kicker">The gap</div>
+        <h2>Cloud ALM tracks the work. Auditors ask for the proof.</h2>
+        <p style="color:var(--ink-2);font-size:18px;margin-top:18px">In a regulated (GxP) setting, every change to a system needs a documented, signed trail: what was specified, who approved it, what was tested, and whether that approval still covers what went live. Out of the box, that evidence ends up in spreadsheets, PDFs on shared drives and email threads beside your ALM tool.</p>
+      </div>
+      <ul class="pain">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg><div><b>Signatures live outside the tool</b>Approvals are collected by email or on paper and copied back by hand.</div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg><div><b>Nobody knows if a signature still applies</b>The requirement changed after sign-off. Does the approval still count?</div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg><div><b>Workflow steps aren't gated</b>A feature can move to testing or production without the sign-off the SOP requires.</div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg><div><b>Reports are assembled before every audit</b>Someone rebuilds the feature's history from five different apps.</div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">What you get</div>
+        <h2>Validation evidence, built into the screens your teams already use.</h2>
+        <p>Evedenz injects its controls into the Cloud ALM launchpad. Features get a signatures section, a validation section and a timeline, with no separate app to learn.</p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3 0 4-6 6-6s1 6 4 6 3-3 5-3"/><path d="M3 21h18"/></svg></div>
+          <h3>Qualified e-signatures</h3>
+          <p>Sign feature reports through Skribble at the level each step needs: simple (SES), advanced (AES) or qualified (QES). Signed PDFs and signing protocols are kept with the feature.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+          <h3>Signature gates</h3>
+          <p>Define per transition which signatures are required. A feature can't move to the next workflow status until its sign-offs are complete.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h3>"In Validation" step</h3>
+          <p>A dedicated validation stage on top of specification, with intended-use classification, change type, target system and business process, picked from value helps.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></div>
+          <h3>Complete feature reports</h3>
+          <p>One PDF covering the feature with its requirements, user stories, tasks, defects, documents and references, including document content and change history.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
+          <h3>Risk linkage</h3>
+          <p>Link Cloud ALM risks to features. Impact, probability, mitigation and owner go into the signed report and count toward change detection.</p>
+        </article>
+        <article class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <h3>Audit timeline</h3>
+          <p>Requests, signatures, changes, withdrawals and invalidations are recorded as events, so the history of every approval can be read in one place.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Validity -->
+  <section id="validity" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">Signature validity</div>
+        <h2>A signature means what it meant when it was given.</h2>
+        <p>Each signature stores a snapshot of everything its report covered. Evedenz compares that snapshot with the live feature every time the feature is opened, and applies three clear rules.</p>
+      </div>
+      <div class="rules">
+        <div class="rule">
+          <span class="pill ok">Signed</span>
+          <h3>Valid and current</h3>
+          <p>Nothing the report covered has changed since signing. The signature counts for gates and as proof.</p>
+        </div>
+        <div class="rule">
+          <span class="pill warn">Changed since</span>
+          <h3>Valid, newer version exists</h3>
+          <p>A change never invalidates a signature. Evedenz flags that the signed version is no longer the latest and lists exactly what changed. The next workflow gate asks for fresh confirmation.</p>
+        </div>
+        <div class="rule">
+          <span class="pill bad">Invalid</span>
+          <h3>The step was undone</h3>
+          <p>When a feature is set back before the status a signature was given at, the step it authorised no longer stands. The record stays visible with its reason, PDF and protocol. Open requests are withdrawn automatically.</p>
+        </div>
+      </div>
+
+      <div class="timeline">
+        <h3>Example: a feature steps back from "Successfully Tested" to "In Implementation"</h3>
+        <p>Both the handover and the test confirmation are invalidated, and the gates ask for them again. The specification approval still stands.</p>
+        <div class="flow">
+          <div class="st v">In Specification<em><span class="pill ok">Signed</span></em></div>
+          <div class="st v">In Validation</div>
+          <div class="st v">In Implementation<em><span class="pill bad">Invalid</span></em></div>
+          <div class="st v">In Testing<em><span class="pill bad">Invalid</span></em></div>
+          <div class="st v">Successfully Tested</div>
+          <div class="st">Ready for Production</div>
+          <div class="st">Deployed</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Report -->
+  <section id="report" class="report" style="padding-top:0">
+    <div class="wrap cols">
+      <div>
+        <div class="kicker">Signed reports</div>
+        <h2>A document a signer can read, and an auditor can trust.</h2>
+        <p style="color:var(--ink-2);font-size:18px;margin-top:18px">The report is rendered once, when the request is sent. The signer approves exactly those bytes. No preview drift, no "the PDF I signed looked different".</p>
+        <ul class="checks">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg><div><b>States its purpose.</b> Who requested it, which record and status it belongs to, which signature quality was asked for.</div></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg><div><b>Describes what it covers.</b> Every linked task and document in full, with specification content rendered as text.</div></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg><div><b>Says when something is empty.</b> "No process risks are assigned" is a statement, not a missing section.</div></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg><div><b>One reference throughout.</b> The report ID appears on every page and ties the record, protocol, events and signature together.</div></li>
+        </ul>
+      </div>
+      <div class="paper" aria-label="Illustration of a signed feature report">
+        <div class="doc-k">Feature report · for signature</div>
+        <h4>Batch release: second-person verification</h4>
+        <dl>
+          <dt>Purpose</dt><dd>Confirm successful test</dd>
+          <dt>Record</dt><dd>FEAT-1042 · In Testing</dd>
+          <dt>Quality</dt><dd>Qualified (QES)</dd>
+          <dt>Contents</dt><dd>4 requirements · 7 tasks · 3 documents · 2 risks</dd>
+        </dl>
+        <div class="lines" aria-hidden="true"><i style="width:94%"></i><i style="width:88%"></i><i style="width:97%"></i><i style="width:62%"></i></div>
+        <p class="decl">"I confirm the successful test of feature FEAT-1042 as described in this report."</p>
+        <div class="sigline">
+          <div class="who"><b>Dr. Anna Weber</b>QA Lead · signed 28 Oct 2026, 14:02</div>
+          <div class="seal">SIGNED<br>QES</div>
+        </div>
+        <div class="foot"><span>Ref. SD-7F3A21</span><span>Page 1 of 9</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture -->
+  <section id="architecture" class="arch">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">How it runs</div>
+        <h2>Your tenant stays untouched. Your data stays in your subaccount.</h2>
+        <p>Evedenz sits in front of your Cloud ALM tenant as a secure proxy. Users open the Evedenz URL instead of the tenant URL, log in as usual through your identity provider, and see Cloud ALM with Evedenz built in.</p>
+      </div>
+
+      <div class="diagram">
+        <svg viewBox="0 0 900 250" role="img" aria-label="Architecture: users reach the Application Router, which forwards to the Evedenz backend; the backend proxies Cloud ALM, stores data in PostgreSQL and sends signature requests to Skribble">
+          <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ah"/></marker></defs>
+          <rect class="grp" x="168" y="18" width="430" height="214" rx="14"/>
+          <text class="gl" x="184" y="40">YOUR SAP BTP SUBACCOUNT</text>
+
+          <rect class="n" x="10" y="95" width="130" height="60" rx="10"/>
+          <text class="t" x="75" y="122" text-anchor="middle">Users</text>
+          <text class="s" x="75" y="140" text-anchor="middle">browser</text>
+
+          <rect class="n" x="190" y="95" width="160" height="60" rx="10"/>
+          <text class="t" x="270" y="122" text-anchor="middle">App Router</text>
+          <text class="s" x="270" y="140" text-anchor="middle">XSUAA login · roles</text>
+
+          <rect class="n hl" x="410" y="95" width="168" height="60" rx="10"/>
+          <text class="t" x="494" y="122" text-anchor="middle">Evedenz</text>
+          <text class="s" x="494" y="140" text-anchor="middle">proxy · UI · services</text>
+
+          <rect class="n" x="410" y="178" width="168" height="44" rx="10"/>
+          <text class="t" x="494" y="205" text-anchor="middle">PostgreSQL</text>
+
+          <rect class="n" x="680" y="40" width="200" height="60" rx="10"/>
+          <text class="t" x="780" y="67" text-anchor="middle">SAP Cloud ALM</text>
+          <text class="s" x="780" y="85" text-anchor="middle">your tenant + APIs</text>
+
+          <rect class="n" x="680" y="150" width="200" height="60" rx="10"/>
+          <text class="t" x="780" y="177" text-anchor="middle">Skribble</text>
+          <text class="s" x="780" y="195" text-anchor="middle">SES · AES · QES</text>
+
+          <path class="e" d="M140 125H186" marker-end="url(#a)"/>
+          <path class="e" d="M350 125H406" marker-end="url(#a)"/>
+          <path class="e" d="M494 155V174" marker-end="url(#a)"/>
+          <path class="e" d="M578 115C630 115 630 70 676 70" marker-end="url(#a)"/>
+          <path class="e" d="M578 135C630 135 630 180 676 180" marker-end="url(#a)"/>
+        </svg>
+      </div>
+
+      <div class="grid">
+        <article class="card">
+          <h3>No tenant modification</h3>
+          <p>Cloud ALM is used through its public APIs and a proxied launchpad. There's nothing to install on the tenant and nothing to remove if you stop.</p>
+        </article>
+        <article class="card">
+          <h3>Your identity provider</h3>
+          <p>The login round trip through SAP Identity Authentication and your corporate IdP (for example Microsoft Entra) works as it does today.</p>
+        </article>
+        <article class="card">
+          <h3>Role-based access</h3>
+          <p>An SAP Application Router enforces User and Admin roles per route with XSUAA. Without a role, every page answers 403.</p>
+        </article>
+        <article class="card">
+          <h3>Your database</h3>
+          <p>Signatures, snapshots, PDFs and events are stored in PostgreSQL in your subaccount, in their own schema, so an existing instance can be shared.</p>
+        </article>
+        <article class="card">
+          <h3>Admin setup page</h3>
+          <p>Configure signature policies, Cloud ALM API credentials and launchpad tiles from one page, with a built-in API access test.</p>
+        </article>
+        <article class="card">
+          <h3>Tile manager</h3>
+          <p>Hide launchpad tiles your teams don't need and add your own, such as a link to SOPs or the Evedenz setup page.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">FAQ</div>
+        <h2>Questions we hear often</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Does Evedenz change anything in our Cloud ALM tenant?</summary>
+          <p>No. Evedenz runs as a separate application in your SAP BTP subaccount and talks to Cloud ALM through its public APIs. Its own data (signatures, validation classification, risk links, settings) is stored in its own database.</p>
+        </details>
+        <details>
+          <summary>Which signature levels are supported?</summary>
+          <p>Through Skribble you can request simple (SES), advanced (AES) and qualified (QES) electronic signatures. You choose the required level per workflow step.</p>
+        </details>
+        <details>
+          <summary>What happens to a signature if the requirement changes afterwards?</summary>
+          <p>It stays valid, and is marked "Changed since" with a list of exactly what changed. Fresh confirmation comes with the next workflow gate. A signature only becomes invalid when the step it authorised is undone, or when an admin revokes it with a reason.</p>
+        </details>
+        <details>
+          <summary>What exactly does a signature cover?</summary>
+          <p>The feature's fields and change history, its linked tasks and their documents (including document content), references and transports, its validation classification and its assigned risks. The workflow status itself is excluded, because the signature exists to authorise that transition.</p>
+        </details>
+        <details>
+          <summary>Can we try it without connecting a tenant?</summary>
+          <p>Yes. A demo mode runs with a sample launchpad, fixture data and a simulated signing service, so you can walk through the whole signature lifecycle before connecting anything.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta" id="contact">
+    <div class="wrap">
+      <div class="cta-box">
+        <div>
+          <h2>See Evedenz on your own Cloud ALM.</h2>
+          <p>We'll walk you through the signature lifecycle and the report, and show how it fits your validation SOPs.</p>
+        </div>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="mailto:hello@evedenz.io?subject=Evedenz%20demo">Book a demo</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>© 2026 Evedenz · <a href="https://blue.works">blue.works</a></p>
+    <p>SAP, SAP Cloud ALM and SAP BTP are trademarks of SAP SE. Skribble is a trademark of Skribble AG.</p>
+  </div>
+</footer>
+
+</body>
+</html>
